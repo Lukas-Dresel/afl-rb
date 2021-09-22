@@ -23,9 +23,9 @@
 #
 
 
-VERSION="2.10.0"
+VERSION="6.1.0"
 QEMU_URL="http://download.qemu-project.org/qemu-${VERSION}.tar.xz"
-QEMU_SHA384="68216c935487bc8c0596ac309e1e3ee75c2c4ce898aab796faa321db5740609ced365fedda025678d072d09ac8928105"
+QEMU_SHA384="4e172fd8d415ac58298a213c8c90a619c988a7986e02f8b0ebd1e3cfbb3566f97505f6e8990de97fa2909cd009f01430"
 
 echo "================================================="
 echo "AFL binary-only instrumentation QEMU build script"
@@ -151,7 +151,7 @@ echo "[+] Build process successful!"
 
 echo "[*] Copying binary..."
 
-cp -f "${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
+cp -f "build/${CPU_TARGET}-linux-user/qemu-${CPU_TARGET}" "../../afl-qemu-trace" || exit 1
 
 cd ..
 ls -l ../afl-qemu-trace || exit 1

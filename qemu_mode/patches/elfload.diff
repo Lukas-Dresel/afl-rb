@@ -1,6 +1,8 @@
---- qemu-2.10.0-rc3-clean/linux-user/elfload.c	2017-08-15 11:39:41.000000000 -0700
-+++ qemu-2.10.0-rc3/linux-user/elfload.c	2017-08-22 14:33:57.397127516 -0700
-@@ -20,6 +20,8 @@
+diff --git a/linux-user/elfload.c b/linux-user/elfload.c
+index 01e9a83..452979e 100644
+--- a/linux-user/elfload.c
++++ b/linux-user/elfload.c
+@@ -27,6 +27,8 @@
  
  #define ELF_OSABI   ELFOSABI_SYSV
  
@@ -9,24 +11,24 @@
  /* from personality.h */
  
  /*
-@@ -2085,6 +2087,8 @@
-     info->brk = 0;
-     info->elf_flags = ehdr->e_flags;
+@@ -2828,6 +2830,8 @@ static void load_elf_image(const char *image_name, int image_fd,
+     }
+ #endif
  
 +    if (!afl_entry_point) afl_entry_point = info->entry;
 +
      for (i = 0; i < ehdr->e_phnum; i++) {
          struct elf_phdr *eppnt = phdr + i;
          if (eppnt->p_type == PT_LOAD) {
-@@ -2118,9 +2122,11 @@
+@@ -2886,9 +2890,11 @@ static void load_elf_image(const char *image_name, int image_fd,
              if (elf_prot & PROT_EXEC) {
                  if (vaddr < info->start_code) {
                      info->start_code = vaddr;
-+                    if (!afl_start_code) afl_start_code = vaddr;
++		    if (!afl_start_code) afl_start_code = vaddr;
                  }
                  if (vaddr_ef > info->end_code) {
                      info->end_code = vaddr_ef;
-+                    if (!afl_end_code) afl_end_code = vaddr_ef;
++		    if (!afl_end_code) afl_end_code = vaddr_ef;
                  }
              }
              if (elf_prot & PROT_WRITE) {

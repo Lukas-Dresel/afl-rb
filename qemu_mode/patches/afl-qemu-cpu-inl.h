@@ -39,7 +39,7 @@
    overhead in the next forked-off copy). */
 
 #define AFL_QEMU_CPU_SNIPPET1 do { \
-    afl_request_tsl(pc, cs_base, flags); \
+    afl_request_tsl(pc, cs_base, flags, cflags); \
   } while (0)
 
 /* This snippet kicks in when the instruction pointer is positioned at
@@ -47,11 +47,11 @@
    regular instrumentation injected via afl-as.h. */
 
 #define AFL_QEMU_CPU_SNIPPET2 do { \
-    if(itb->pc == afl_entry_point) { \
+    if(tb->pc == afl_entry_point) { \
       afl_setup(); \
       afl_forkserver(cpu); \
     } \
-    afl_maybe_log(itb->pc); \
+    afl_maybe_log(tb->pc); \
   } while (0)
 
 /* We use one additional file descriptor to relay "needs translation"
@@ -85,20 +85,16 @@ static void afl_forkserver(CPUState*);
 static inline void afl_maybe_log(abi_ulong);
 
 static void afl_wait_tsl(CPUState*, int);
-static void afl_request_tsl(target_ulong, target_ulong, uint64_t);
+static void afl_request_tsl(target_ulong, target_ulong, uint32_t, uint32_t);
 
 /* Data structure passed around by the translate handlers: */
 
 struct afl_tsl {
   target_ulong pc;
   target_ulong cs_base;
-  uint64_t flags;
+  uint32_t flags;
+  uint32_t cflags;
 };
-
-/* Some forward decls: */
-
-TranslationBlock *tb_htable_lookup(CPUState*, target_ulong, target_ulong, uint32_t);
-static inline TranslationBlock *tb_find(CPUState*, TranslationBlock*, int);
 
 /*************************
  * ACTUAL IMPLEMENTATION *
@@ -259,7 +255,7 @@ static inline void afl_maybe_log(abi_ulong cur_loc) {
    we tell the parent to mirror the operation, so that the next fork() has a
    cached copy. */
 
-static void afl_request_tsl(target_ulong pc, target_ulong cb, uint64_t flags) {
+static void afl_request_tsl(target_ulong pc, target_ulong cb, uint32_t flags, uint32_t cflags) {
 
   struct afl_tsl t;
 
@@ -268,6 +264,7 @@ static void afl_request_tsl(target_ulong pc, target_ulong cb, uint64_t flags) {
   t.pc      = pc;
   t.cs_base = cb;
   t.flags   = flags;
+  t.cflags  = cflags;
 
   if (write(TSL_FD, &t, sizeof(struct afl_tsl)) != sizeof(struct afl_tsl))
     return;
@@ -289,14 +286,12 @@ static void afl_wait_tsl(CPUState *cpu, int fd) {
     if (read(fd, &t, sizeof(struct afl_tsl)) != sizeof(struct afl_tsl))
       break;
 
-    tb = tb_htable_lookup(cpu, t.pc, t.cs_base, t.flags);
+    tb = tb_htable_lookup(cpu, t.pc, t.cs_base, t.flags, t.cflags);
 
     if(!tb) {
       mmap_lock();
-      tb_lock();
       tb_gen_code(cpu, t.pc, t.cs_base, t.flags, 0);
       mmap_unlock();
-      tb_unlock();
     }
 
   }
